@@ -42,15 +42,61 @@ class Triangle(Mesh):
         if key == glfw.KEY_C:
             # self.color = (0, 0, 0)
             glfw.set_time(0)
+            
+class Cylinder(Node):
+    """ Very simple cylinder based on provided load function """
+    def __init__(self, shader):
+        super().__init__()
+        self.add(*load('cylinder.obj', shader))  # just load cylinder from file
+        
 
 class Skybox(Mesh):
     def __init__(self, shader, texture_files):
-        position = np.array(((-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1),
-                             (-1, -1, 1), (-1, 1, 1), (1, 1, 1), (1, -1, 1)), 'f') * 10
+        position = np.array([
+            # Front face
+            -1.0, -1.0,  1.0,
+             1.0, -1.0,  1.0,
+             1.0,  1.0,  1.0,
+            -1.0,  1.0,  1.0,
+            # Back face
+            -1.0, -1.0, -1.0,
+            -1.0,  1.0, -1.0,
+             1.0,  1.0, -1.0,
+             1.0, -1.0, -1.0,
+            # Top face
+            -1.0,  1.0, -1.0,
+            -1.0,  1.0,  1.0,
+             1.0,  1.0,  1.0,
+             1.0,  1.0, -1.0,
+            # Bottom face
+            -1.0, -1.0, -1.0,
+             1.0, -1.0, -1.0,
+             1.0, -1.0,  1.0,
+            -1.0, -1.0,  1.0,
+            # Right face
+             1.0, -1.0, -1.0,
+             1.0,  1.0, -1.0,
+             1.0,  1.0,  1.0,
+             1.0, -1.0,  1.0,
+            # Left face
+            -1.0, -1.0, -1.0,
+            -1.0, -1.0,  1.0,
+            -1.0,  1.0,  1.0,
+            -1.0,  1.0, -1.0
+        ], dtype=np.float32)
+        
+        indices = np.array([
+             0,  1,  2,    0,  2,  3,  # front
+             4,  5,  6,    4,  6,  7,  # back
+             8,  9, 10,    8, 10, 11,  # top
+            12, 13, 14,   12, 14, 15,  # bottom
+            16, 17, 18,   16, 18, 19,  # right
+            20, 21, 22,   20, 22, 23   # left
+        ], dtype=np.uint32)
         
         self.textures = [self.load_texture(filename) for filename in texture_files]
         attributes = dict(position=position)
-        super().__init__(shader, attributes=attributes)
+        super().__init__(shader, attributes=attributes, indices=indices)
 
     def draw(self, primitives=GL.GL_TRIANGLES, **uniforms):
         super().draw(primitives=primitives, global_color=self.color, **uniforms)
@@ -74,13 +120,6 @@ def loadCubeMap(faces): # vecteur de string (faces)
 
     return textureID
 
-class Cylinder(Node):
-    """ Very simple cylinder based on provided load function """
-    def __init__(self, shader):
-        super().__init__()
-        self.add(*load('cylinder.obj', shader))  # just load cylinder from file
-
-
 # -------------- main program and scene setup --------------------------------
 def main():
     """ create a window, add scene objects, then run rendering loop """
@@ -99,9 +138,13 @@ def main():
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     if len(sys.argv) < 2:
         viewer.add(Axis(shader))
-        viewer.add(Node(children=[Cylinder(shader)], transform=translate(x=+2)))
-        viewer.add(Node(children=[Triangle(shader)], transform=translate(x=-1)))
-        viewer.add(Node(children=[Skybox(skybox_shader)]))
+        #viewer.add(Node(children=[Cylinder(shader)], transform=translate(x=+2)))
+        #viewer.add(Node(children=[Triangle(shader)], transform=translate(x=-1)))
+        
+        #Ajout de la skybox
+        skybox = Skybox(skybox_shader, ["right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png"])
+        viewer.add(skybox)
+        
         print('Usage:\n\t%s [3dfile]*\n\n3dfile\t\t the filename of a model in'
               ' format supported by assimp.' % (sys.argv[0],))
 
