@@ -9,6 +9,7 @@ import sys                          # for system arguments
 import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 import glfw                         # lean window system wrapper for OpenGL
+from PIL import Image
 
 from core import Shader, Mesh, Viewer, Node, load
 from transform import translate, identity, rotate, scale
@@ -42,6 +43,25 @@ class Triangle(Mesh):
             # self.color = (0, 0, 0)
             glfw.set_time(0)
 
+class Skybox:
+    def loadCubeMap(faces): # vecteur de string (faces)
+        textureID = None
+        GL.glGenTextures(1, textureID)
+        GL.glBindTexture(GL.GL_TEXTURE_CUBE_MAP, textureID)
+
+        for i in range(len(faces)):
+            image = Image.open(faces[i])
+            image_data = np.array(list(image.getdata()), np.uint8)
+        
+            GL.glTexImage2D(GL.GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL.GL_RGB, image.width, image.height, 0, GL.GL_RGB, GL.GL_UNSIGNED_BYTE, image_data)
+        
+        GL.glTexParameteri(GL.GL_TEXTURE_CUBE_MAP, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
+        GL.glTexParameteri(GL.GL_TEXTURE_CUBE_MAP, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
+        GL.glTexParameteri(GL.GL_TEXTURE_CUBE_MAP, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexParameteri(GL.GL_TEXTURE_CUBE_MAP, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexParameteri(GL.GL_TEXTURE_CUBE_MAP, GL.GL_TEXTURE_WRAP_R, GL.GL_CLAMP_TO_EDGE)
+
+        return textureID
 
 class Cylinder(Node):
     """ Very simple cylinder based on provided load function """
@@ -64,6 +84,7 @@ def main():
         viewer.add(Axis(shader))
         viewer.add(Node(children=[Cylinder(shader)], transform=translate(x=+2)))
         viewer.add(Node(children=[Triangle(shader)], transform=translate(x=-1)))
+        viewer.add(Node(children=[Skybox(shader)]))
         print('Usage:\n\t%s [3dfile]*\n\n3dfile\t\t the filename of a model in'
               ' format supported by assimp.' % (sys.argv[0],))
 
